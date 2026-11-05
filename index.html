@@ -41,6 +41,19 @@
     }
     .fade-up { animation: fadeUp 0.4s ease-out forwards; opacity: 0; }
   </style>
+
+  <!-- OneSignal Web Push -->
+  <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
+  <script>
+    window.OneSignalDeferred = window.OneSignalDeferred || [];
+    OneSignalDeferred.push(async function (OneSignal) {
+      await OneSignal.init({
+        appId: "723b901a-2f29-45b7-af1c-794ddcc8bdb7",
+        serviceWorkerPath: "/OneSignalSDKWorker.js",
+        serviceWorkerParam: { scope: "/" }
+      });
+    });
+  </script>
 </head>
 
 <body class="bg-slate-100 dark:bg-slate-900 flex justify-center min-h-screen text-slate-800 dark:text-slate-100 transition-colors duration-200">
@@ -55,15 +68,23 @@
       <div class="p-5 overflow-y-auto space-y-4 text-xs text-slate-700 dark:text-slate-200 leading-relaxed font-bold">
         <div class="flex items-start gap-2.5 bg-indigo-50 dark:bg-slate-800 p-3 rounded-xl border border-indigo-100 dark:border-slate-700">
           <span class="bg-indigo-600 text-white w-5 h-5 rounded-full flex items-center justify-center shrink-0 text-[10px] font-black mt-0.5">1</span>
-          <p>نسبة العمولة لإدارة التطبيق <strong>2.5%</strong> على أي عملية بيع، والله شاهد بيننا.</p>
+          <p>يتم قبول الإعلان ونشره في القسم الخاص به بعد تحويل سند بمبلغ <strong>1000 ريال</strong> إلى أحد حساباتنا.</p>
         </div>
         <div class="flex items-start gap-2.5 bg-amber-50 dark:bg-slate-800 p-3 rounded-xl border border-amber-100 dark:border-slate-700">
           <span class="bg-amber-600 text-white w-5 h-5 rounded-full flex items-center justify-center shrink-0 text-[10px] font-black mt-0.5">2</span>
-          <p>أي إعلان ممول في الصفحة الرئيسية تتم خصم عمولة إضافية مقدماً، الرجاء التواصل مع الإدارة.</p>
+          <p>الإعلان الممول في الصفحة الرئيسية قيمته <strong>3000 ريال</strong>.</p>
         </div>
         <div class="flex items-start gap-2.5 bg-emerald-50 dark:bg-slate-800 p-3 rounded-xl border border-emerald-100 dark:border-slate-700">
           <span class="bg-emerald-600 text-white w-5 h-5 rounded-full flex items-center justify-center shrink-0 text-[10px] font-black mt-0.5">3</span>
-          <p><strong>حساب موثوق:</strong> أي عميل أجرى أكثر من 5 عمليات بيع أو شراء وكان صادقاً في تعامله يتم إضافة له حساب موثوق لمدة 30 يوم ويحصل على العلامة الزرقاء.</p>
+          <p><strong>الحساب الموثوق:</strong> قيمته <strong>6000 ريال</strong>، ويتيح لصاحب الحساب نشر عدد <strong>15 إعلاناً</strong>.</p>
+        </div>
+        <div class="flex items-start gap-2.5 bg-sky-50 dark:bg-slate-800 p-3 rounded-xl border border-sky-100 dark:border-slate-700">
+          <span class="bg-sky-600 text-white w-5 h-5 rounded-full flex items-center justify-center shrink-0 text-[10px] font-black mt-0.5">4</span>
+          <p>مدة جميع الإعلانات العادية والممولة، وكذلك الحساب الموثوق، <strong>شهران</strong>؛ وبعد انتهاء المدة يتم التجديد أو حذف الإعلان/الحساب.</p>
+        </div>
+        <div class="flex items-start gap-2.5 bg-rose-50 dark:bg-slate-800 p-3 rounded-xl border border-rose-100 dark:border-slate-700">
+          <span class="bg-rose-600 text-white w-5 h-5 rounded-full flex items-center justify-center shrink-0 text-[10px] font-black mt-0.5">5</span>
+          <p>يمكننا أن نكون <strong>وسيطاً بين المشتري والبائع</strong> عند الحاجة.</p>
         </div>
       </div>
       <div class="p-4 border-t border-gray-100 dark:border-slate-800 bg-gray-50 dark:bg-slate-900">

@@ -561,37 +561,25 @@
 
   </div>
 
-  <!-- Local storage integration -->
   <script type="module">
+    // --- إعدادات فايربيس الحقيقية ---
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getFirestore, collection, addDoc, getDocs, doc, setDoc, updateDoc, deleteDoc, onSnapshot, query, orderBy, serverTimestamp } 
+    from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-    // تخزين محلي داخل المتصفح بدلاً من خدمة قواعد بيانات خارجية
-    const db = {};
-    const localDbKey = "haraj_local_database_v1";
-    const readDb = () => { try { return JSON.parse(localStorage.getItem(localDbKey) || "{}"); } catch (_) { return {}; } };
-    const writeDb = (data) => { localStorage.setItem(localDbKey, JSON.stringify(data)); };
-    const collection = (_, name) => ({ type: "collection", name });
-    const doc = (_, name, id) => ({ type: "doc", name, id });
-    const query = (ref, ...args) => ref;
-    const orderBy = (...args) => null;
-    const serverTimestamp = () => new Date().toISOString();
-    const makeSnapshot = (name) => {
-      const data = readDb(); const rows = data[name] || {};
-      const docs = Object.entries(rows).map(([id, value]) => ({ id, data: () => value }));
-      return { empty: docs.length === 0, size: docs.length, docs, forEach: (callback) => docs.forEach(callback), exists: () => !!data[name], data: () => data[name] };
+    // ⚠️ استبدل هذه القيم ببيانات مشروعك من Firebase
+    const firebaseConfig = {
+      apiKey: "AIzaSyAhKugM_eRQclWJXG64S3XhGduqHdowh3c",
+      authDomain: "salem-haraj.firebaseapp.com",
+      projectId: "salem-haraj",
+      storageBucket: "salem-haraj.firebasestorage.app",
+      messagingSenderId: "1046858725262",
+      appId: "1:1046858725262:web:0fb0b4140967d05e8196df"
     };
-    const listeners = {};
-    const notifyLocal = (name) => { const snapshot = makeSnapshot(name); (listeners[name] || []).forEach(callback => callback(snapshot)); };
-    const onSnapshot = (ref, callback) => {
-      const name = ref.name; listeners[name] ||= []; listeners[name].push(callback);
-      callback(ref.type === "doc" ? (() => { const all = readDb(); const value = all[name]?.[ref.id]; return { exists: () => value !== undefined, data: () => value }; })() : makeSnapshot(name));
-      return () => { listeners[name] = listeners[name].filter(fn => fn !== callback); };
-    };
-    const getDocs = async (ref) => makeSnapshot(ref.name);
-    const addDoc = async (ref, value) => { const data = readDb(); data[ref.name] ||= {}; const id = "id_" + Date.now().toString(36) + "_" + Math.random().toString(36).slice(2, 8); data[ref.name][id] = value; writeDb(data); notifyLocal(ref.name); return { id }; };
-    const setDoc = async (ref, value) => { const data = readDb(); data[ref.name] ||= {}; data[ref.name][ref.id] = value; writeDb(data); notifyLocal(ref.name); };
-    const updateDoc = async (ref, value) => { const data = readDb(); data[ref.name] ||= {}; data[ref.name][ref.id] = { ...(data[ref.name][ref.id] || {}), ...value }; writeDb(data); notifyLocal(ref.name); };
-    const deleteDoc = async (ref) => { const data = readDb(); if (data[ref.name]) delete data[ref.name][ref.id]; writeDb(data); notifyLocal(ref.name); };
-    window.addEventListener("storage", (event) => { if (event.key === localDbKey) Object.keys(listeners).forEach(notifyLocal); });
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    // --------------------------------
 
     let categories = ["الرئيسية", "سيارات", "سياكل", "عقار", "أجهزة", "أثاث", "خدمات"];
     let products = [];
@@ -636,21 +624,18 @@
     window.openSafetyModal = () => { toggleSideMenu(false); alert("مركز الأمان: عاين السلعة بنفسك قبل الدفع، والموقع غير مسؤول عن التعاملات خارج الحسابات الموثوقة."); };
     window.toggleDarkMode = (isDark) => { document.documentElement.classList.toggle('dark', isDark); };
 
-    // الإبلاغ عن الإعلان عبر الواتساب على رقم 772988917
     window.reportActiveAd = function() {
       if (!activeAd) return;
       const msg = encodeURIComponent(`إبلاغ عن محتوى مسيء/مخالف:\nاسم الإعلان: ${activeAd.title}\nالقسم: ${activeAd.category}\nالمعلن: ${activeAd.seller || 'غير حدد'}`);
       window.open(`https://wa.me/967772988917?text=${msg}`, '_blank');
     };
 
-    // طلب حذف حساب موثوق عبر الواتساب على رقم 772988917
     window.requestAccountDeletion = function() {
       if (!loggedInTrustedUser) return;
       const msg = encodeURIComponent(`طلب حذف حساب موثوق:\nاسم المستخدم: ${loggedInTrustedUser}\nأرجو حذف حسابي وجميع البيانات المرتبطة به.`);
       window.open(`https://wa.me/967772988917?text=${msg}`, '_blank');
     };
 
-    // التحقق من تسجيل دخول الحساب الموثوق وفتح نافذة النشر مباشرة
     window.verifyTrustedLogin = async function(e) {
       e.preventDefault();
       const u = document.getElementById('loginUser').value.trim();
@@ -793,7 +778,34 @@
       } catch (err) { console.error(err); }
     }
 
-    // نشر إعلان الحساب الموثوق مباشرة (عادي فقط وبدون ممول)
+    window.submitCommission = async function(e) {
+      e.preventDefault();
+      const submitBtn = document.getElementById('commSubmitBtn');
+      submitBtn.disabled = true; submitBtn.innerText = "جاري الإرسال...";
+      
+      const reqData = {
+        adTitle: document.getElementById('commAdTitle').value.trim(),
+        whatsapp: document.getElementById('commWhatsapp').value.trim(),
+        bankInfo: document.getElementById('commBankName').value,
+        receiptImg: commReceiptBase64,
+        type: 'عمولة',
+        timestamp: serverTimestamp()
+      };
+      
+      try {
+        await addDoc(collection(db, "requests"), reqData);
+        alert('تم إرسال إشعار العمولة للإدارة بنجاح، شكراً لتعاونكم.');
+        document.getElementById('commissionForm').reset();
+        commReceiptBase64 = "";
+        document.getElementById('commImgPreview').innerHTML = '';
+        closeCommissionModal();
+      } catch (err) {
+        alert('خطأ: ' + err.message);
+      } finally {
+        submitBtn.disabled = false; submitBtn.innerText = "إرسال سند العمولة";
+      }
+    };
+
     window.submitTrustedAdDirect = async function(e) {
       e.preventDefault();
       const submitBtn = document.getElementById('tAdSubmitBtn');
@@ -992,7 +1004,6 @@
       });
     }
 
-    // دوال نافذة تفاصيل الإعلان ومعاينة الصور
     window.openDetailModal = function(id) {
       activeAd = products.find(p => p.id === id);
       if (!activeAd) return;

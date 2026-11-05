@@ -1,0 +1,675 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>لوحة التحكم الإدارية - حراج كل شي</title>
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Font: Cairo -->
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
+  <!-- Font Awesome 6 -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+
+  <style>
+    body { font-family: 'Cairo', sans-serif; }
+  </style>
+</head>
+<body class="bg-slate-100 text-slate-800 min-h-screen pb-12">
+
+  <!-- نافذة تسجيل الدخول للأدمن -->
+  <div id="adminLoginModal" class="fixed inset-0 bg-slate-950/90 z-[200] flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-slate-900 w-full max-w-sm rounded-2xl p-6 shadow-2xl space-y-4">
+      <div class="text-center space-y-1">
+        <i class="fa-solid fa-shield-halved text-indigo-600 text-3xl"></i>
+        <h3 class="font-extrabold text-base text-slate-900 dark:text-white">تسجيل دخول لوحة التحكم</h3>
+        <p class="text-xs text-slate-500">الرجاء إدخال بيانات المشرف المعتمدة</p>
+      </div>
+      <form onsubmit="verifyAdminLogin(event)" class="space-y-3 text-right">
+        <div>
+          <label class="text-xs font-bold mb-1 block text-slate-700">اسم المستخدم</label>
+          <input type="text" id="adminUser" required placeholder="اسم المستخدم..." class="w-full text-xs border rounded-xl p-2.5" dir="ltr">
+        </div>
+        <div>
+          <label class="text-xs font-bold mb-1 block text-slate-700">كلمة المرور</label>
+          <input type="password" id="adminPass" required placeholder="كلمة المرور..." class="w-full text-xs border rounded-xl p-2.5" dir="ltr">
+        </div>
+        <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold py-3 rounded-xl text-xs shadow-md">دخول لوحة التحكم</button>
+      </form>
+    </div>
+  </div>
+
+  <header class="bg-slate-900 text-white shadow p-4 flex justify-between items-center sticky top-0 z-50">
+    <div class="flex items-center gap-3">
+      <i class="fa-solid fa-shield-halved text-yellow-400 text-2xl"></i>
+      <h1 class="font-black text-lg">لوحة تحكم مدير التطبيق</h1>
+    </div>
+    <div class="flex items-center gap-2">
+      <span id="loggedAdminName" class="bg-indigo-600 text-white text-xs px-2.5 py-1 rounded-full font-bold">مسؤول</span>
+      <button onclick="logoutAdmin()" class="bg-red-600 text-white text-xs px-2.5 py-1 rounded-full font-bold hover:bg-red-700">خروج</button>
+    </div>
+  </header>
+
+  <main class="max-w-5xl mx-auto p-4 space-y-6">
+    
+    <!-- قسم إدارة الأقسام (إضافة وحذف) -->
+    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 space-y-4">
+      <h2 class="font-extrabold text-sm text-slate-900 border-b pb-2 flex items-center gap-2">
+        <i class="fa-solid fa-folder-tree text-indigo-600"></i> إدارة أقسام التطبيق (إضافة وحذف)
+      </h2>
+      <div class="flex gap-2">
+        <input type="text" id="newCategoryName" placeholder="اسم القسم الجديد..." class="text-xs border rounded-xl p-2.5 flex-1">
+        <button onclick="addNewCategory()" class="bg-indigo-600 text-white font-extrabold px-4 py-2.5 rounded-xl text-xs">إضافة قسم</button>
+      </div>
+      <div id="adminCategoriesList" class="flex flex-wrap gap-2 pt-2"></div>
+    </div>
+
+    <!-- قسم إدارة الحسابات البنكية (لتسديد العمولة) -->
+    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 space-y-4">
+      <h2 class="font-extrabold text-sm text-slate-900 border-b pb-2 flex items-center gap-2">
+        <i class="fa-solid fa-university text-indigo-600"></i> إضافة الحسابات البنكية (لتسديد عمولة التطبيق)
+      </h2>
+      <form id="bankAccountForm" onsubmit="saveBankAccount(event)" class="grid grid-cols-1 sm:grid-cols-4 gap-3 text-xs">
+        <input type="text" id="bankName" required placeholder="اسم البنك (مثال: الكريمي)" class="border rounded-xl p-2.5">
+        <input type="text" id="accountNumber" required placeholder="رقم الحساب" class="border rounded-xl p-2.5" dir="ltr">
+        <input type="text" id="accountHolder" required placeholder="اسم صاحب الحساب" class="border rounded-xl p-2.5">
+        <button type="submit" class="bg-indigo-600 text-white font-extrabold rounded-xl py-2.5">إضافة الحساب البنكي</button>
+      </form>
+      <div id="adminBankAccountsList" class="space-y-2 mt-2"></div>
+    </div>
+
+    <!-- قسم إشعارات تسديد حساب العمولة -->
+    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 space-y-4">
+      <h2 class="font-extrabold text-sm text-slate-900 border-b pb-2 flex items-center gap-2">
+        <i class="fa-solid fa-file-invoice-dollar text-emerald-600"></i> إشعارات تسديد حساب العمولة الواردة
+      </h2>
+      <div id="adminCommissionNotifications" class="space-y-3">
+        <p class="text-xs text-slate-400">جاري التحميل...</p>
+      </div>
+    </div>
+
+    <!-- قسم طلبات إعلانات العملاء (قبول أو رفض) -->
+    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 space-y-4">
+      <h2 class="font-extrabold text-sm text-slate-900 border-b pb-2 flex items-center gap-2">
+        <i class="fa-solid id-badge fa-bullhorn text-amber-600"></i> طلبات إعلانات العملاء للمراجعة (قبول / رفض)
+      </h2>
+      <div id="adminCustomerAdsRequests" class="space-y-3">
+        <p class="text-xs text-slate-400">جاري التحميل...</p>
+      </div>
+    </div>
+
+    <!-- قسم إضافة/تعديل إعلان جديد مباشرة من الأدمن -->
+    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 space-y-4">
+      <h2 id="adFormHeading" class="font-extrabold text-sm text-slate-900 border-b pb-2 flex items-center gap-2">
+        <i class="fa-solid fa-circle-plus text-emerald-600"></i> إضافة إعلان جديد (مباشرة)
+      </h2>
+      <form id="adminAddAdForm" onsubmit="adminSubmitAd(event)" class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+        <input type="hidden" id="editingAdId" value="">
+        <input type="text" id="admTitle" required placeholder="عنوان الإعلان" class="border rounded-xl p-2.5">
+        <select id="admCategory" required class="border rounded-xl p-2.5 font-bold"></select>
+        
+        <select id="admAvailability" class="border rounded-xl p-2.5 font-bold">
+          <option value="متوفر">متوفر</option>
+          <option value="مطلوب توفيره">مطلوب توفيره</option>
+        </select>
+        
+        <select id="admPostType" class="border rounded-xl p-2.5 font-bold">
+          <option value="عادي">عادي (بالقسم فقط)</option>
+          <option value="ممول">ممول (الرئيسية + القسم)</option>
+        </select>
+
+        <input type="text" id="admPrice" required placeholder="السعر" class="border rounded-xl p-2.5">
+        <select id="admCurrency" class="border rounded-xl p-2.5"><option value="ر.ي">ر.ي</option><option value="ر.س">ر.س</option><option value="$">$</option></select>
+        <input type="text" id="admCity" required placeholder="المحافظة" class="border rounded-xl p-2.5" value="صنعاء (أمانة العاصمة)">
+        <input type="text" id="admWhatsapp" required placeholder="رقم الواتساب" class="border rounded-xl p-2.5" value="772988917">
+        
+        <div class="sm:col-span-2">
+          <label class="font-bold mb-1 block">رابط أو صورة الإعلان</label>
+          <input type="text" id="admImgUrl" required placeholder="رابط الصورة أو مسارها" class="border rounded-xl p-2.5 w-full" value="https://placehold.co/300">
+        </div>
+
+        <textarea id="admDesc" placeholder="تفاصيل الوصف..." class="border rounded-xl p-2.5 sm:col-span-2" rows="2"></textarea>
+        
+        <div class="flex gap-2 sm:col-span-2">
+          <button type="submit" id="adSubmitBtn" class="bg-emerald-600 text-white font-extrabold flex-1 py-3 rounded-xl">نشر الإعلان فوراً</button>
+          <button type="button" id="cancelEditBtn" onclick="resetAdForm()" class="hidden bg-gray-400 text-white font-extrabold px-4 py-3 rounded-xl">إلغاء التعديل</button>
+        </div>
+      </form>
+    </div>
+
+    <!-- قسم طلبات توثيق الحسابات الواردة -->
+    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 space-y-4">
+      <h2 class="font-extrabold text-sm text-slate-900 border-b pb-2 flex items-center gap-2">
+        <i class="fa-solid fa-user-shield text-indigo-600"></i> طلبات توثيق الحسابات الواردة
+      </h2>
+      <div id="adminRequestsContainer" class="space-y-3"><p class="text-xs text-slate-400">جاري التحميل...</p></div>
+    </div>
+
+    <!-- نافذة منبثقة لتعديل الحساب الموثوق -->
+    <div id="editTrustedModal" class="fixed inset-0 bg-slate-950/80 z-[150] hidden flex items-center justify-center p-4">
+      <div class="bg-white dark:bg-slate-900 w-full max-w-sm rounded-2xl p-5 shadow-2xl space-y-3">
+        <div class="flex justify-between items-center border-b pb-2">
+          <h3 class="font-extrabold text-xs text-indigo-600">تعديل بيانات الحساب الموثوق</h3>
+          <button onclick="closeEditTrustedModal()" class="text-base"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <form onsubmit="saveEditedTrustedAccount(event)" class="space-y-2.5 text-xs">
+          <input type="hidden" id="editTrustedId" value="">
+          <div><label class="font-bold block mb-1">الاسم</label><input type="text" id="editTrName" required class="w-full border rounded-xl p-2"></div>
+          <div><label class="font-bold block mb-1">اسم المستخدم</label><input type="text" id="editTrUsername" required class="w-full border rounded-xl p-2" dir="ltr"></div>
+          <div><label class="font-bold block mb-1">كلمة المرور</label><input type="text" id="editTrPassword" required class="w-full border rounded-xl p-2" dir="ltr"></div>
+          <div><label class="font-bold block mb-1">المحافظة</label><input type="text" id="editTrCity" required class="w-full border rounded-xl p-2"></div>
+          <div><label class="font-bold block mb-1">رقم الواتساب</label><input type="tel" id="editTrWhatsapp" required class="w-full border rounded-xl p-2" dir="ltr"></div>
+          <button type="submit" class="w-full bg-indigo-600 text-white font-extrabold py-2.5 rounded-xl">حفظ التعديلات</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- قسم الحسابات الموثوقة المفعلة -->
+    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 space-y-4">
+      <h2 class="font-extrabold text-sm text-slate-900 border-b pb-2 flex items-center gap-2">
+        <i class="fa-solid fa-users text-emerald-600"></i> الحسابات الموثوقة المفعلة (تعديل وحذف)
+      </h2>
+      <div id="adminTrustedAccountsContainer" class="space-y-3"><p class="text-xs text-slate-400">جاري التحميل...</p></div>
+    </div>
+
+    <!-- قسم إدارة الإعلانات والتعديل والحذف -->
+    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 space-y-4">
+      <h2 class="font-extrabold text-sm text-slate-900 border-b pb-2 flex items-center gap-2">
+        <i class="fa-solid fa-list-check text-indigo-600"></i> الإعلانات النشطة (تعديل وحذف)
+      </h2>
+      <div id="adminAdsContainer" class="grid grid-cols-1 sm:grid-cols-2 gap-3"><p class="text-xs text-slate-400">جاري التحميل...</p></div>
+    </div>
+
+  </main>
+
+  <script type="module">
+    // --- إعدادات فايربيس الحقيقية ---
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getFirestore, collection, addDoc, getDocs, doc, setDoc, updateDoc, deleteDoc, onSnapshot, query, orderBy, serverTimestamp, runTransaction } 
+    from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+    // ⚠️ استبدل هذه القيم ببيانات مشروعك من Firebase
+    const firebaseConfig = {
+      apiKey: "AIzaSyAhKugM_eRQclWJXG64S3XhGduqHdowh3c",
+      authDomain: "salem-haraj.firebaseapp.com",
+      projectId: "salem-haraj",
+      storageBucket: "salem-haraj.firebasestorage.app",
+      messagingSenderId: "1046858725262",
+      appId: "1:1046858725262:web:0fb0b4140967d05e8196df"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    // --------------------------------
+
+    let currentCategories = ["الرئيسية", "سيارات", "سياكل", "عقار", "أجهزة", "أثاث", "خدمات"];
+    let adsCache = {};
+    let trustedAccountsCache = {};
+
+    window.verifyAdminLogin = function(e) {
+      e.preventDefault();
+      const u = document.getElementById('adminUser').value.trim();
+      const p = document.getElementById('adminPass').value.trim();
+
+      if (u === 'wsFsal' && p === 'dUgnnk856sa') {
+        localStorage.setItem('adminLoggedIn', u);
+        document.getElementById('adminLoginModal').classList.add('hidden');
+        document.getElementById('loggedAdminName').textContent = `مسؤول: ${u}`;
+        const notifyToken = window.prompt("أدخل رمز حماية الإشعارات (ONESIGNAL_ADMIN_TOKEN) الذي ستضبطه في Vercel:");
+        if (notifyToken) sessionStorage.setItem("onesignalAdminToken", notifyToken.trim());
+
+      } else {
+        alert('اسم المستخدم أو كلمة المرور غير صحيحة!');
+      }
+    };
+
+    window.logoutAdmin = function() {
+      localStorage.removeItem('adminLoggedIn');
+      document.getElementById('adminLoginModal').classList.remove('hidden');
+    };
+
+    if (localStorage.getItem('adminLoggedIn')) {
+      document.getElementById('adminLoginModal').classList.add('hidden');
+      document.getElementById('loggedAdminName').textContent = `مسؤول: ${localStorage.getItem('adminLoggedIn')}`;
+      if (!sessionStorage.getItem("onesignalAdminToken")) {
+        const notifyToken = window.prompt("أدخل رمز حماية الإشعارات (ONESIGNAL_ADMIN_TOKEN) الذي ستضبطه في Vercel:");
+        if (notifyToken) sessionStorage.setItem("onesignalAdminToken", notifyToken.trim());
+      }
+
+    }
+
+    // إدارة الأقسام
+    onSnapshot(doc(db, "settings", "categories"), (snap) => {
+      if (snap.exists() && snap.data().list) {
+        currentCategories = snap.data().list;
+      }
+      renderAdminCategories();
+      populateAdminSelect();
+    });
+
+    function renderAdminCategories() {
+      const container = document.getElementById('adminCategoriesList');
+      container.innerHTML = '';
+      currentCategories.forEach((cat) => {
+        if (cat === 'الرئيسية') return;
+        const badge = document.createElement('div');
+        badge.className = 'bg-slate-100 border px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-2';
+        badge.innerHTML = `<span>${cat}</span> <button onclick="deleteCategory('${cat}')" class="text-red-500 hover:text-red-700"><i class="fa-solid fa-xmark"></i></button>`;
+        container.appendChild(badge);
+      });
+    }
+
+    function populateAdminSelect() {
+      const select = document.getElementById('admCategory');
+      select.innerHTML = '';
+      currentCategories.forEach(c => {
+        if (c !== 'الرئيسية') {
+          const opt = document.createElement('option');
+          opt.value = c; opt.textContent = c;
+          select.appendChild(opt);
+        }
+      });
+    }
+
+    window.addNewCategory = async function() {
+      const name = document.getElementById('newCategoryName').value.trim();
+      if (!name) return;
+      if (currentCategories.includes(name)) { alert('القسم موجود مسبقاً'); return; }
+      currentCategories.push(name);
+      await setDoc(doc(db, "settings", "categories"), { list: currentCategories });
+      document.getElementById('newCategoryName').value = '';
+      alert('تم إضافة القسم بنجاح');
+    };
+
+    window.deleteCategory = async function(catName) {
+      if (confirm(`هل تريد حذف قسم "${catName}"؟`)) {
+        currentCategories = currentCategories.filter(c => c !== catName);
+        await setDoc(doc(db, "settings", "categories"), { list: currentCategories });
+      }
+    };
+
+    // حفظ الحسابات البنكية
+    window.saveBankAccount = async function(e) {
+      e.preventDefault();
+      const bankName = document.getElementById('bankName').value.trim();
+      const accountNumber = document.getElementById('accountNumber').value.trim();
+      const accountHolder = document.getElementById('accountHolder').value.trim();
+
+      await addDoc(collection(db, "bankAccounts"), { bankName, accountNumber, accountHolder });
+      document.getElementById('bankAccountForm').reset();
+      alert('تم إضافة الحساب البنكي بنجاح');
+    };
+
+    onSnapshot(collection(db, "bankAccounts"), (snapshot) => {
+      const listDiv = document.getElementById('adminBankAccountsList');
+      listDiv.innerHTML = '';
+      if (snapshot.empty) { listDiv.innerHTML = '<p class="text-xs text-slate-400">لا توجد حسابات بنكية مضافة.</p>'; return; }
+      snapshot.forEach(d => {
+        const acc = d.data();
+        const div = document.createElement('div');
+        div.className = 'border p-2.5 rounded-xl bg-slate-50 text-xs flex justify-between items-center';
+        div.innerHTML = `
+          <div>
+            <p class="font-bold text-slate-900">البنك: ${acc.bankName} | صاحب الحساب: ${acc.accountHolder}</p>
+            <p class="font-mono text-indigo-600" dir="ltr">رقم الحساب: ${acc.accountNumber}</p>
+          </div>
+          <button onclick="deleteBank('${d.id}')" class="text-red-500 font-bold"><i class="fa-solid fa-trash"></i></button>
+        `;
+        listDiv.appendChild(div);
+      });
+    });
+
+    window.deleteBank = async (id) => { if (confirm('حذف الحساب البنكي؟')) await deleteDoc(doc(db, "bankAccounts", id)); };
+
+    // إضافة أو تعديل إعلان من لوحة التحكم
+    async function sendHarajPush(title, message) {
+      const token = sessionStorage.getItem("onesignalAdminToken");
+      if (!token) { alert("لم يتم إدخال رمز حماية الإشعارات. لم يُرسل إشعار."); return; }
+      try {
+        const response = await fetch("/api/send-notification", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "x-admin-token": token },
+          body: JSON.stringify({ title, message, url: window.location.origin })
+        });
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(result.error || "فشل إرسال الإشعار");
+        console.log("OneSignal notification sent", result);
+      } catch (error) {
+        alert("تم حفظ الإعلان لكن تعذر إرسال الإشعار: " + error.message);
+      }
+    }
+
+    window.adminSubmitAd = async function(e) {
+      e.preventDefault();
+      const editingId = document.getElementById('editingAdId').value;
+      const adData = {
+        title: document.getElementById('admTitle').value.trim(),
+        category: document.getElementById('admCategory').value,
+        availability: document.getElementById('admAvailability').value,
+        postType: document.getElementById('admPostType').value,
+        price: document.getElementById('admPrice').value.trim(),
+        currency: document.getElementById('admCurrency').value,
+        city: document.getElementById('admCity').value,
+        whatsapp: document.getElementById('admWhatsapp').value.trim(),
+        imgUrl: document.getElementById('admImgUrl').value.trim(),
+        description: document.getElementById('admDesc').value.trim(),
+        seller: 'الإدارة',
+        timestamp: serverTimestamp()
+      };
+
+      if (editingId) {
+        await updateDoc(doc(db, "ads", editingId), adData);
+        alert('تم تعديل الإعلان بنجاح!');
+        resetAdForm();
+      } else {
+        await addDoc(collection(db, "ads"), adData);
+        document.getElementById('adminAddAdForm').reset();
+        alert('تم نشر الإعلان بنجاح!');
+        await sendHarajPush("إعلان جديد في حراج كل شي - اليمن", `تم نشر إعلان: ${adData.title} في قسم ${adData.category}`);
+      }
+    };
+
+    window.loadAdForEdit = function(id) {
+      const ad = adsCache[id];
+      if (!ad) return;
+
+      document.getElementById('editingAdId').value = id;
+      document.getElementById('admTitle').value = ad.title || '';
+      document.getElementById('admCategory').value = ad.category || '';
+      document.getElementById('admAvailability').value = ad.availability || 'متوفر';
+      document.getElementById('admPostType').value = ad.postType || 'عادي';
+      document.getElementById('admPrice').value = ad.price || '';
+      document.getElementById('admCurrency').value = ad.currency || 'ر.ي';
+      document.getElementById('admCity').value = ad.city || '';
+      document.getElementById('admWhatsapp').value = ad.whatsapp || '';
+      document.getElementById('admImgUrl').value = ad.imgUrl || '';
+      document.getElementById('admDesc').value = ad.description || '';
+
+      document.getElementById('adFormHeading').innerHTML = `<i class="fa-solid fa-pen-to-square text-indigo-600"></i> تعديل الإعلان`;
+      document.getElementById('adSubmitBtn').textContent = 'حفظ التعديلات';
+      document.getElementById('cancelEditBtn').classList.remove('hidden');
+      window.scrollTo({ top: 400, behavior: 'smooth' });
+    };
+
+    window.resetAdForm = function() {
+      document.getElementById('adminAddAdForm').reset();
+      document.getElementById('editingAdId').value = '';
+      document.getElementById('adFormHeading').innerHTML = `<i class="fa-solid fa-circle-plus text-emerald-600"></i> إضافة إعلان جديد (مباشرة)`;
+      document.getElementById('adSubmitBtn').textContent = 'نشر الإعلان فوراً';
+      document.getElementById('cancelEditBtn').classList.add('hidden');
+    };
+
+    // جلب الطلبات (إشعارات العمولة، إعلانات العملاء، وطلبات التوثيق)
+    onSnapshot(query(collection(db, "requests"), orderBy("timestamp", "desc")), (snapshot) => {
+      const commContainer = document.getElementById('adminCommissionNotifications');
+      const custAdsContainer = document.getElementById('adminCustomerAdsRequests');
+      const reqContainer = document.getElementById('adminRequestsContainer');
+      
+      commContainer.innerHTML = '';
+      custAdsContainer.innerHTML = '';
+      reqContainer.innerHTML = '';
+      
+      let commCount = 0; let custAdsCount = 0; let reqCount = 0;
+
+      snapshot.forEach(d => {
+        const req = d.data();
+        const card = document.createElement('div');
+        card.className = 'border rounded-xl p-3 bg-slate-50 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 text-xs';
+
+        if (req.type === 'عمولة') {
+          commCount++;
+          card.innerHTML = `
+            <div>
+              <span class="bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded">إشعار تسديد عمولة</span>
+              <p class="font-bold mt-1">الإعلان: ${req.adTitle}</p>
+              <p>رقم الواتساب: <a href="https://wa.me/967${req.whatsapp}" target="_blank" class="text-indigo-600 font-bold">${req.whatsapp}</a></p>
+              <p class="text-slate-500">البنك المحول إليه: ${req.bankInfo}</p>
+            </div>
+            <div class="flex items-center gap-3">
+              ${req.receiptImg ? `<a href="${req.receiptImg}" target="_blank"><img src="${req.receiptImg}" class="w-16 h-16 object-cover rounded border" title="صورة السند"></a>` : ''}
+              <button onclick="deleteRequest('${d.id}')" class="bg-red-600 text-white px-3 py-1.5 rounded-lg font-bold">حذف الإشعار</button>
+            </div>
+          `;
+          commContainer.appendChild(card);
+        } else if (req.type === 'إعلان') {
+          custAdsCount++;
+          card.innerHTML = `
+            <div class="flex items-center gap-2">
+              <img src="${req.imgUrl || 'https://placehold.co/100'}" class="w-12 h-12 object-cover rounded">
+              <div>
+                <span class="bg-amber-100 text-amber-800 font-bold px-2 py-0.5 rounded">طلب إعلان جديد (${req.postType || 'عادي'})</span>
+                <p class="font-bold mt-1">${req.title} - ${req.price} ${req.currency}</p>
+                <p class="text-slate-500">القسم: ${req.category} | المحافظة: ${req.city} | واتساب: ${req.whatsapp}</p>
+                <p class="text-slate-600 mt-0.5">${req.description || ''}</p>
+              </div>
+            </div>
+            <div class="flex gap-2 w-full sm:w-auto justify-end">
+              <!-- تمرير المعرف d.id هنا ليتم حذفه من الطلبات بعد قبوله -->
+              <button onclick='approveCustomerAd(${JSON.stringify(req)}, "${d.id}", this)' class="bg-emerald-600 text-white px-3 py-1.5 rounded-lg font-bold">قبول ونشر</button>
+              <button onclick="deleteRequest('${d.id}')" class="bg-red-600 text-white px-3 py-1.5 rounded-lg font-bold">رفض وحذف</button>
+            </div>
+          `;
+          custAdsContainer.appendChild(card);
+        } else if (req.type === 'حساب موثوق') {
+          reqCount++;
+          card.innerHTML = `
+            <div>
+              <span class="bg-indigo-100 text-indigo-800 font-bold px-2 py-0.5 rounded">طلب توثيق حساب</span>
+              <p class="font-bold mt-1">الاسم: ${req.name} | المستخدم: ${req.username} | الرمز: ${req.password}</p>
+              <p class="text-slate-600">المحافظة: ${req.city} | واتساب: ${req.whatsapp}</p>
+              <p class="text-slate-600">الهوية: ${req.idType} (${req.idNumber})</p>
+            </div>
+            <div class="flex items-center gap-2">
+              <div class="flex gap-1">
+                ${req.idFront ? `<a href="${req.idFront}" target="_blank"><img src="${req.idFront}" class="w-10 h-10 object-cover rounded border" title="أمام"></a>` : ''}
+                ${req.idBack ? `<a href="${req.idBack}" target="_blank"><img src="${req.idBack}" class="w-10 h-10 object-cover rounded border" title="خلف"></a>` : ''}
+              </div>
+              <button onclick="approveTrusted('${d.id}', '${req.name}', '${req.username}', '${req.password}', '${req.city}', '${req.whatsapp}')" class="bg-emerald-600 text-white px-3 py-1.5 rounded-lg font-bold">قبول الطلب وتفعيل</button>
+              <button onclick="deleteRequest('${d.id}')" class="bg-red-600 text-white px-3 py-1.5 rounded-lg font-bold">حذف</button>
+            </div>
+          `;
+          reqContainer.appendChild(card);
+        }
+      });
+
+      if (commCount === 0) commContainer.innerHTML = '<p class="text-xs text-slate-400">لا توجد إشعارات تسديد عمولة جديدة.</p>';
+      if (custAdsCount === 0) custAdsContainer.innerHTML = '<p class="text-xs text-slate-400">لا توجد طلبات إعلانات جديدة من العملاء.</p>';
+      if (reqCount === 0) reqContainer.innerHTML = '<p class="text-xs text-slate-400">لا توجد طلبات توثيق جديدة.</p>';
+    });
+
+    // قبول ونشر الطلبات مع منع النقر المتكرر وضمان عدم إنشاء نسخ مكررة
+    const approvingRequests = new Set();
+
+    window.approveCustomerAd = async function(adObj, reqId, button) {
+      if (!reqId || approvingRequests.has(reqId)) return;
+      approvingRequests.add(reqId);
+      const originalText = button ? button.textContent : 'قبول ونشر';
+      if (button) {
+        button.disabled = true;
+        button.textContent = 'جاري الحفظ...';
+        button.classList.add('opacity-60', 'cursor-not-allowed');
+      }
+
+      try {
+        let wasNewlyPublished = false;
+        const requestRef = doc(db, "requests", reqId);
+        // معرف ثابت مرتبط بالطلب: يمنع تكرار الإعلان حتى مع إعادة الضغط أو بطء الشبكة
+        const adRef = doc(db, "ads", "approved_" + reqId);
+        const newAd = {
+          title: adObj.title,
+          category: adObj.category,
+          availability: adObj.availability || 'متوفر',
+          postType: adObj.postType || 'عادي',
+          price: adObj.price,
+          currency: adObj.currency,
+          city: adObj.city,
+          whatsapp: adObj.whatsapp,
+          imgUrl: adObj.imgUrl || 'https://placehold.co/300',
+          images: adObj.images || [],
+          description: adObj.description,
+          seller: 'زبون',
+          timestamp: serverTimestamp(),
+          sourceRequestId: reqId
+        };
+
+        await runTransaction(db, async (transaction) => {
+          const requestSnap = await transaction.get(requestRef);
+          const adSnap = await transaction.get(adRef);
+
+          // إذا سبق قبول الطلب، لا تنشر إعلاناً آخر
+          if (adSnap.exists()) {
+            if (requestSnap.exists()) transaction.delete(requestRef);
+            return;
+          }
+          if (!requestSnap.exists()) {
+            throw new Error('الطلب لم يعد موجوداً. قد يكون تم قبوله مسبقاً.');
+          }
+          transaction.set(adRef, newAd);
+          transaction.delete(requestRef);
+          wasNewlyPublished = true;
+        });
+
+        if (button) button.textContent = 'تم القبول';
+        alert('تم قبول الإعلان ونشره بنجاح في المنصة!');
+        if (wasNewlyPublished) await sendHarajPush("إعلان جديد في حراج كل شي - اليمن", `تمت الموافقة على إعلان: ${newAd.title} في قسم ${newAd.category}`);
+      } catch (err) {
+        if (button) {
+          button.disabled = false;
+          button.textContent = originalText;
+          button.classList.remove('opacity-60', 'cursor-not-allowed');
+        }
+        alert('خطأ أثناء النشر: ' + err.message);
+      } finally {
+        approvingRequests.delete(reqId);
+      }
+    };
+
+    window.approveTrusted = async function(reqId, name, username, password, city, whatsapp) {
+      if (!reqId || approvingRequests.has(reqId)) return;
+      approvingRequests.add(reqId);
+      try {
+        const requestRef = doc(db, "requests", reqId);
+        const accountRef = doc(db, "trustedAccounts", "approved_" + reqId);
+        await runTransaction(db, async (transaction) => {
+          const requestSnap = await transaction.get(requestRef);
+          const accountSnap = await transaction.get(accountRef);
+          if (accountSnap.exists()) {
+            if (requestSnap.exists()) transaction.delete(requestRef);
+            return;
+          }
+          if (!requestSnap.exists()) throw new Error('الطلب لم يعد موجوداً. قد يكون تم تفعيله مسبقاً.');
+          transaction.set(accountRef, { name, username, password, city, whatsapp, approvedAt: serverTimestamp(), sourceRequestId: reqId });
+          transaction.delete(requestRef);
+        });
+        alert('تم قبول وتفعيل الحساب الموثوق بنجاح!');
+      } catch (err) {
+        alert('خطأ: ' + err.message);
+      } finally {
+        approvingRequests.delete(reqId);
+      }
+    };
+
+    window.deleteRequest = async (id) => { if (confirm('هل تريد حذف أو رفض هذا الطلب؟')) await deleteDoc(doc(db, "requests", id)); };
+
+        // جلب الحسابات الموثوقة مع تفعيل زر التعديل والحذف
+    onSnapshot(collection(db, "trustedAccounts"), (snapshot) => {
+      const container = document.getElementById('adminTrustedAccountsContainer');
+      container.innerHTML = '';
+      trustedAccountsCache = {};
+
+      if (snapshot.empty) { container.innerHTML = '<p class="text-xs text-slate-400">لا توجد حسابات موثوقة مفعلة حالياً.</p>'; return; }
+
+      snapshot.forEach(d => {
+        const acc = d.data();
+        trustedAccountsCache[d.id] = acc;
+
+        const card = document.createElement('div');
+        card.className = 'border p-3 rounded-xl bg-slate-50 flex justify-between items-center text-xs';
+        card.innerHTML = `
+          <div>
+            <p class="font-bold text-indigo-700">${acc.name} (${acc.username})</p>
+            <p class="text-slate-500">كلمة المرور: ${acc.password} | المحافظة: ${acc.city} | واتساب: ${acc.whatsapp}</p>
+          </div>
+          <div class="flex gap-1.5">
+            <button onclick="openEditTrustedModal('${d.id}')" class="bg-indigo-600 text-white px-2.5 py-1 rounded font-bold">تعديل</button>
+            <button onclick="deleteTrustedAccount('${d.id}')" class="bg-red-500 text-white px-2.5 py-1 rounded font-bold">حذف</button>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+    });
+
+    window.openEditTrustedModal = function(id) {
+      const acc = trustedAccountsCache[id];
+      if (!acc) return;
+      document.getElementById('editTrustedId').value = id;
+      document.getElementById('editTrName').value = acc.name || '';
+      document.getElementById('editTrUsername').value = acc.username || '';
+      document.getElementById('editTrPassword').value = acc.password || '';
+      document.getElementById('editTrCity').value = acc.city || '';
+      document.getElementById('editTrWhatsapp').value = acc.whatsapp || '';
+      document.getElementById('editTrustedModal').classList.remove('hidden');
+    };
+
+    window.closeEditTrustedModal = function() {
+      document.getElementById('editTrustedModal').classList.add('hidden');
+    };
+
+    window.saveEditedTrustedAccount = async function(e) {
+      e.preventDefault();
+      const id = document.getElementById('editTrustedId').value;
+      const updatedData = {
+        name: document.getElementById('editTrName').value.trim(),
+        username: document.getElementById('editTrUsername').value.trim(),
+        password: document.getElementById('editTrPassword').value.trim(),
+        city: document.getElementById('editTrCity').value.trim(),
+        whatsapp: document.getElementById('editTrWhatsapp').value.trim()
+      };
+
+      try {
+        await updateDoc(doc(db, "trustedAccounts", id), updatedData);
+        alert('تم تعديل بيانات الحساب الموثوق بنجاح!');
+        closeEditTrustedModal();
+      } catch (err) {
+        alert('خطأ: ' + err.message);
+      }
+    };
+
+    window.deleteTrustedAccount = async (id) => { if (confirm('هل تريد حذف هذا الحساب الموثوق؟')) await deleteDoc(doc(db, "trustedAccounts", id)); };
+
+    // جلب الإعلانات النشطة مع التخزين المؤقت
+    onSnapshot(collection(db, "ads"), (snapshot) => {
+      const container = document.getElementById('adminAdsContainer');
+      container.innerHTML = '';
+      adsCache = {};
+
+      if (snapshot.empty) { container.innerHTML = '<p class="text-xs text-slate-400">لا توجد إعلانات نشطة.</p>'; return; }
+      
+      snapshot.forEach(d => {
+        const ad = d.data();
+        adsCache[d.id] = ad;
+
+        const card = document.createElement('div');
+        card.className = 'border p-3 rounded-xl bg-slate-50 flex justify-between items-center text-xs';
+        card.innerHTML = `
+          <div class="flex items-center gap-2">
+            <img src="${ad.imgUrl || 'https://placehold.co/100'}" class="w-12 h-12 object-cover rounded">
+            <div>
+              <p class="font-bold text-emerald-700">${ad.title} (${ad.postType || 'عادي'})</p>
+              <p class="text-slate-500">${ad.price} ${ad.currency} - ${ad.city}</p>
+            </div>
+          </div>
+          <div class="flex gap-1.5">
+            <button onclick="loadAdForEdit('${d.id}')" class="bg-indigo-600 text-white px-2.5 py-1 rounded font-bold">تعديل</button>
+            <button onclick="deleteAd('${d.id}')" class="bg-red-500 text-white px-2.5 py-1 rounded font-bold">حذف</button>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+    });
+
+    window.deleteAd = async (id) => { if (confirm('حذف هذا الإعلان نهائياً؟')) await deleteDoc(doc(db, "ads", id)); };
+  </script>
+</body>
+</html>
